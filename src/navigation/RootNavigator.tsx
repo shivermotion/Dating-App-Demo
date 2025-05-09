@@ -2,29 +2,37 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { OnboardingScreenObserver } from "../screens/OnboardingScreen";
-import { MatchesScreenObserver } from "../screens/MatchesScreen";
-import { ChatScreenObserver } from "../screens/ChatScreen";
-import { ProfileScreenObserver } from "../screens/ProfileScreen";
-import { store } from "../store";
 import { Ionicons } from "@expo/vector-icons";
-import { Platform } from "react-native";
+
+// Auth Screens
+import LoginScreen from "../screens/auth/LoginScreen";
+import RegisterScreen from "../screens/auth/RegisterScreen";
+import OnboardingScreen from "../screens/OnboardingScreen";
+
+// Main Screens
+import MatchesScreen from "../screens/main/MatchesScreen";
+import ChatScreen from "../screens/main/ChatScreen";
+import ProfileScreen from "../screens/main/ProfileScreen";
+
+import { colors } from "../theme/colors";
 
 export type RootStackParamList = {
+  Login: undefined;
+  Register: undefined;
   Onboarding: undefined;
-  Main: undefined;
-  Chat: { matchId: string; matchName: string };
+  MainTabs: undefined;
+  Chat: { matchId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
-const TabNavigator = () => {
+const MainTabs = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+          let iconName: keyof typeof Ionicons.glyphMap;
 
           if (route.name === "Matches") {
             iconName = focused ? "heart" : "heart-outline";
@@ -32,100 +40,68 @@ const TabNavigator = () => {
             iconName = focused ? "chatbubbles" : "chatbubbles-outline";
           } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
-          } else if (route.name === "Onboarding") {
-            iconName = focused ? "create" : "create-outline";
+          } else {
+            iconName = "help-outline";
           }
 
-          return <Ionicons name={iconName as any} size={size} color={color} />;
+          return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "#FF6B6B",
-        tabBarInactiveTintColor: "#6C757D",
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.gray[400],
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          height: Platform.OS === "ios" ? 88 : 60,
-          paddingBottom: Platform.OS === "ios" ? 28 : 8,
-          paddingTop: 8,
           borderTopWidth: 1,
-          borderTopColor: "#E9ECEF",
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "500",
-          marginBottom: Platform.OS === "ios" ? 0 : 4,
-        },
-        headerStyle: {
-          backgroundColor: "#FFFFFF",
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: "#E9ECEF",
-        },
-        headerTitleStyle: {
-          color: "#212529",
-          fontSize: 18,
-          fontWeight: "600",
+          borderTopColor: colors.border,
+          paddingBottom: 5,
+          paddingTop: 5,
         },
       })}
     >
       <Tab.Screen
         name="Matches"
-        component={MatchesScreenObserver}
+        component={MatchesScreen}
         options={{
-          headerShown: true,
-          headerTitle: "Discover",
-          tabBarLabel: "Matches",
+          headerShown: false,
         }}
       />
       <Tab.Screen
         name="Chat"
-        component={ChatScreenObserver}
+        component={ChatScreen}
         options={{
-          headerShown: true,
-          headerTitle: "Messages",
-          tabBarLabel: "Messages",
+          headerShown: false,
         }}
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreenObserver}
+        component={ProfileScreen}
         options={{
-          headerShown: true,
-          headerTitle: "Profile",
-          tabBarLabel: "Profile",
+          headerShown: false,
         }}
       />
     </Tab.Navigator>
   );
 };
 
-export const RootNavigator = () => {
+const RootNavigator: React.FC = () => {
+  // For development, we'll start directly at MainTabs
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Main"
+        initialRouteName="MainTabs"
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: "#FFFFFF" },
         }}
       >
-        <Stack.Screen name="Main" component={TabNavigator} />
-        <Stack.Screen name="Onboarding" component={OnboardingScreenObserver} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen
           name="Chat"
-          component={ChatScreenObserver}
+          component={ChatScreen}
           options={{
             headerShown: true,
-            headerTitle: "",
+            headerTitle: "Chat",
             headerBackTitle: "Back",
-            headerStyle: {
-              backgroundColor: "#FFFFFF",
-            },
           }}
         />
       </Stack.Navigator>
@@ -134,3 +110,5 @@ export const RootNavigator = () => {
 };
 
 RootNavigator.displayName = "RootNavigator";
+
+export default RootNavigator;

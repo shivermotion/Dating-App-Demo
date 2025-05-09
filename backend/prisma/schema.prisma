@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id             String     @id @default(uuid())
+    email          String     @unique
+    password       String
+    name           String
+    bio            String?
+    age            Int
+    gender         String
+    location       String?
+    traits         Json? // Array of {name: string, score: number}
+    interests      String[]   @default([])
+    dateVibe       String?
+    createdAt      DateTime   @default(now())
+    updatedAt      DateTime   @updatedAt
+    profileImage   String?
+    voiceIntro     String?
+    photoVerified  Boolean    @default(false)
+    voiceVerified  Boolean    @default(false)
+    embedding      Float[]    @default([])
+    traitEmbedding Json? // Store vector embeddings as JSON
+    matches        Match[]    @relation("UserMatches")
+    matchedWith    Match[]    @relation("MatchedWith")
+    messages       Message[]
+    sentMessages   Message[]  @relation("SentMessages")
+    chatRooms      ChatRoom[] @relation("UserChatRooms")
+}
+
+model Match {
+    id            String    @id @default(uuid())
+    userId        String
+    matchedUserId String
+    score         Float // Compatibility score
+    createdAt     DateTime  @default(now())
+    user          User      @relation("UserMatches", fields: [userId], references: [id])
+    matchedUser   User      @relation("MatchedWith", fields: [matchedUserId], references: [id])
+    messages      Message[]
+    chatRoom      ChatRoom?
+}
+
+model Message {
+    id         String    @id @default(uuid())
+    content    String
+    senderId   String
+    matchId    String
+    createdAt  DateTime  @default(now())
+    sentiment  Float? // Sentiment score from -1 to 1
+    toxicity   Float? // Toxicity score from 0 to 1
+    sender     User      @relation("SentMessages", fields: [senderId], references: [id])
+    match      Match     @relation(fields: [matchId], references: [id])
+    User       User?     @relation(fields: [userId], references: [id])
+    userId     String?
+    ChatRoom   ChatRoom? @relation(fields: [chatRoomId], references: [id])
+    chatRoomId String?
+}
+
+model ChatRoom {
+    id        String    @id @default(uuid())
+    matchId   String    @unique
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    match     Match     @relation(fields: [matchId], references: [id])
+    users     User[]    @relation("UserChatRooms")
+    messages  Message[]
+}

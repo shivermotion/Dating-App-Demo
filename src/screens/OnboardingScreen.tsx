@@ -1,127 +1,225 @@
 import React, { useState } from "react";
-import { Box, Text, Input, Button, ScrollView } from "@gluestack-ui/themed";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { observer } from "mobx-react-lite";
-import { store } from "../store";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../navigation/RootNavigator";
+import {
+  onboardingStore,
+  ONBOARDING_QUESTIONS,
+} from "../store/onboardingStore";
+import { colors } from "../theme/colors";
 
-type Message = {
-  id: string;
-  text: string;
-  sender: "user" | "ai";
-};
+const OnboardingScreen = observer(({ navigation }: any) => {
+  const [answer, setAnswer] = useState("");
 
-const OnboardingScreen = () => {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: "Hi! I'm your AI dating assistant. Let's create your profile together. What's your name?",
-      sender: "ai",
-    },
-  ]);
-  const [input, setInput] = useState("");
+  const handleNext = async () => {
+    if (!answer.trim()) return;
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+    onboardingStore.setAnswer(
+      onboardingStore.currentQuestion.id,
+      answer.trim()
+    );
+    setAnswer("");
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: input,
-      sender: "user",
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Great! Now, tell me a bit about yourself. What are your interests and hobbies?",
-        sender: "ai",
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-
-      // Create user profile after a few messages
-      if (messages.length >= 4) {
-        store.setUser({
-          id: "1",
-          name: userMessage.text,
-          age: 28,
-          bio: "Passionate about technology, music, and exploring new places. Always up for a good conversation over coffee.",
-          interests: [
-            "Technology",
-            "Music",
-            "Travel",
-            "Coffee",
-            "Photography",
-            "Hiking",
-          ],
-          photos: ["https://placekitten.com/400/400"],
-          personalityTraits: [
-            "Adventurous",
-            "Creative",
-            "Empathetic",
-            "Intellectual",
-          ],
-          location: {
-            city: "San Francisco",
-            country: "USA",
-          },
-        });
-        navigation.replace("Main");
+    if (onboardingStore.isLastStep) {
+      try {
+        await onboardingStore.generateProfile();
+        navigation.replace("MainTabs");
+      } catch (error) {
+        // Error is handled by the store
       }
-    }, 1000);
+    } else {
+      onboardingStore.nextStep();
+    }
   };
 
+  const handleBack = () => {
+    if (onboardingStore.currentStep > 0) {
+      onboardingStore.previousStep();
+      setAnswer(
+        onboardingStore.answers[onboardingStore.currentQuestion.id] || ""
+      );
+    }
+  };
+
+  if (onboardingStore.isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Generating your profile...</Text>
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-background-50">
-      <Box className="flex-1 p-4">
-        <ScrollView className="flex-1 mb-4">
-          {messages.map((message) => (
-            <Box
-              key={message.id}
-              className={`mb-4 p-3 rounded-lg ${
-                message.sender === "user"
-                  ? "bg-primary-100 self-end"
-                  : "bg-secondary-100 self-start"
-              }`}
-              style={{ maxWidth: "80%" }}
-            >
-              <Text
-                className={
-                  message.sender === "user"
-                    ? "text-primary-900"
-                    : "text-secondary-900"
-                }
-              >
-                {message.text}
-              </Text>
-            </Box>
-          ))}
-        </ScrollView>
-        <Box className="flex-row items-center">
-          <Input flex={1} className="mr-2">
-            <Input.Input
-              value={input}
-              onChangeText={setInput}
-              placeholder="Type your message..."
-              onSubmitEditing={handleSend}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${onboardingStore.progress}%` },
+              ]}
             />
-          </Input>
-          <Button onPress={handleSend} disabled={!input.trim()}>
-            <Text className="text-white">Send</Text>
-          </Button>
-        </Box>
-      </Box>
-    </SafeAreaView>
+          </View>
+          <Text style={styles.progressText}>
+            Step {onboardingStore.currentStep + 1} of{" "}
+            {ONBOARDING_QUESTIONS.length}
+          </Text>
+        </View>
+
+        <Text style={styles.title}>Let's get to know you</Text>
+        <Text style={styles.subtitle}>
+          {onboardingStore.currentQuestion.question}
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          value={answer}
+          onChangeText={setAnswer}
+          placeholder={onboardingStore.currentQuestion.placeholder}
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+        />
+
+        {onboardingStore.error && (
+          <Text style={styles.error}>{onboardingStore.error}</Text>
+        )}
+
+        <View style={styles.buttonContainer}>
+          {onboardingStore.currentStep > 0 && (
+            <TouchableOpacity
+              style={[styles.button, styles.backButton]}
+              onPress={handleBack}
+            >
+              <Text style={[styles.buttonText, styles.backButtonText]}>
+                Back
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={[styles.button, !answer.trim() && styles.buttonDisabled]}
+            onPress={handleNext}
+            disabled={!answer.trim()}
+          >
+            <Text style={styles.buttonText}>
+              {onboardingStore.isLastStep ? "Generate Profile" : "Next"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
-};
+});
 
-OnboardingScreen.displayName = "OnboardingScreen";
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    flexGrow: 1,
+    padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  progressContainer: {
+    marginBottom: 32,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: colors.gray[200],
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: "center",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: colors.text,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: colors.textSecondary,
+    marginBottom: 24,
+  },
+  input: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 24,
+  },
+  error: {
+    color: colors.error,
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  button: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+  },
+  buttonDisabled: {
+    backgroundColor: colors.gray[300],
+  },
+  buttonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  backButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  backButtonText: {
+    color: colors.text,
+  },
+});
 
-export const OnboardingScreenObserver = observer(OnboardingScreen);
+export default OnboardingScreen;

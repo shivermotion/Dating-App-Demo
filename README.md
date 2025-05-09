@@ -1,77 +1,97 @@
-# Dating App Demo
+# AI-First Dating App
 
-A modern dating application built with React Native, featuring AI-powered matching and conversation features.
+A modern dating application that uses AI to enhance the matching and chat experience.
 
 ## Features
 
-- AI-powered profile matching
-- Real-time chat with AI suggestions
-- Modern, clean UI design
-- Profile customization
-- Interest-based matching
-- Personality trait analysis
+- 🤖 AI-powered onboarding with personality analysis
+- 💝 Daily curated matches using vector similarity
+- 💬 Real-time chat with AI wingman suggestions
+- 🛡️ Toxicity detection and sentiment analysis
+- 📱 Beautiful mobile-first UI with Expo
 
 ## Tech Stack
 
-- React Native
-- Expo
-- TypeScript
-- MobX for state management
-- NativeWind for styling
-- GlueStack UI components
+- **Frontend**: React Native (Expo), TypeScript, MobX
+- **Backend**: Express.js, TypeScript, Prisma
+- **Database**: PostgreSQL with pgvector
+- **AI**: Ollama (Llama 2), Hugging Face models
+- **Real-time**: Socket.io
+- **DevOps**: Docker, GitHub Actions
 
-## Getting Started
+## Setup
 
-1. Clone the repository:
+1. Install dependencies:
 
-```bash
-git clone https://github.com/yourusername/dating-app-demo.git
-cd dating-app-demo
-```
+   ```bash
+   brew install ollama
+   yarn install
+   ```
 
-2. Install dependencies:
+2. Start Ollama:
 
-```bash
-yarn install
-```
+   ```bash
+   ollama serve
+   ollama run llama2:7b
+   ```
 
-3. Start the development server:
+3. Start the development environment:
+   ```bash
+   yarn dev
+   ```
 
-```bash
-yarn start
-```
+This will start:
 
-4. Run on iOS:
+- PostgreSQL database
+- Express API server
+- Socket.io chat service
+- Expo development server
 
-```bash
-yarn ios
-```
+## Development
 
-5. Run on Android:
+- `packages/mobile`: Expo React Native app
+- `packages/server`: Express API
+- `packages/chat-service`: Socket.io server
+- `packages/shared`: TypeScript types
+- `packages/scripts`: Development utilities
 
-```bash
-yarn android
-```
+## API Documentation
 
-## Project Structure
+See `docs/api.md` for detailed API documentation.
 
-```
-src/
-  ├── screens/        # Screen components
-  ├── navigation/     # Navigation configuration
-  ├── store/         # MobX store
-  ├── types/         # TypeScript types
-  └── components/    # Reusable components
-```
+## Next Steps (TODO)
+
+### Premium Features
+
+- [ ] Truepic integration for photo verification
+- [ ] Pinecone for scalable vector search
+- [ ] GPT-4 for enhanced chat suggestions
+- [ ] Advanced matching algorithms
+- [ ] Premium subscription model
+
+### Infrastructure
+
+- [ ] AWS deployment
+- [ ] CI/CD pipeline
+- [ ] Monitoring and analytics
+- [ ] Rate limiting
+- [ ] Caching layer
+
+### Security
+
+- [ ] End-to-end encryption
+- [ ] Two-factor authentication
+- [ ] GDPR compliance
+- [ ] Regular security audits
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT

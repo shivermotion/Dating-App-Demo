@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_USER: datingapp
+      POSTGRES_PASSWORD: datingapp
+      POSTGRES_DB: datingapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  server:
+    build:
+      context: ./packages/server
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://datingapp:datingapp@postgres:5432/datingapp
+      PORT: 3000
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./packages/server:/app
+      - /app/node_modules
+
+  chat-service:
+    build:
+      context: ./packages/chat-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
+    depends_on:
+      - server
+    volumes:
+      - ./packages/chat-service:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data: 

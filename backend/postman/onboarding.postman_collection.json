@@ -1,0 +1,93 @@
+{
+  "info": {
+    "name": "Dating App - Onboarding",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Submit Onboarding",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": {
+            "userId": "{{user_id}}",
+            "responses": [
+              "John Doe",
+              "28",
+              "I love hiking and trying new restaurants",
+              "Photography, cooking, and rock climbing",
+              "A cozy dinner followed by a movie",
+              "Someone who's adventurous and has a good sense of humor",
+              "I can play the guitar and speak three languages",
+              "Funny, outgoing, and always up for an adventure",
+              "Reading a book with hot chocolate",
+              "To travel the world and start my own business"
+            ],
+            "photo": "data:image/jpeg;base64,...",
+            "voice": "data:audio/mp4;base64,..."
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/onboarding/chat",
+          "host": ["{{base_url}}"],
+          "path": ["onboarding", "chat"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"success\": true,\n  \"user\": {\n    \"id\": \"user_id\",\n    \"bio\": \"Adventure-seeking photographer who loves cooking and speaks three languages. Looking for someone to share new experiences with.\",\n    \"traits\": [\n      { \"name\": \"openness\", \"score\": 0.85 },\n      { \"name\": \"conscientiousness\", \"score\": 0.75 },\n      { \"name\": \"extraversion\", \"score\": 0.80 },\n      { \"name\": \"agreeableness\", \"score\": 0.70 },\n      { \"name\": \"neuroticism\", \"score\": 0.30 }\n    ],\n    \"interests\": [\"photography\", \"cooking\", \"rock climbing\", \"travel\", \"music\"],\n    \"dateVibe\": \"Adventurous and cozy\",\n    \"profileImage\": \"https://...\",\n    \"photoVerified\": true,\n    \"voiceVerified\": true\n  }\n}"
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json"
+        },
+        {
+          "name": "Error Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"success\": false,\n  \"error\": \"Failed to process onboarding data\"\n}"
+            }
+          },
+          "status": "Internal Server Error",
+          "code": 500,
+          "_postman_previewlanguage": "json"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "auth_token",
+      "value": "your_auth_token_here"
+    },
+    {
+      "key": "user_id",
+      "value": "user_id_here"
+    }
+  ]
+} 
