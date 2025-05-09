@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dating_app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/dating_app?schema=public
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CLIENT_URL=http://localhost:3000
+      - OLLAMA_API_URL=http://ollama:11434/api
+    depends_on:
+      - postgres
+      - ollama
+
+volumes:
+  postgres_data:
+  ollama_data: 

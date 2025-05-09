@@ -1,18 +1,15 @@
 import { makeAutoObservable } from 'mobx';
+import { authStore } from './authStore';
+import { matchStore } from './matchStore';
+import { profileStore } from './profileStore';
 
 export type User = {
   id: string;
   name: string;
   age: number;
-  bio: string;
-  interests: string[];
-  photos: string[];
-  personalityTraits: string[];
-  location: {
-    city: string;
-    country: string;
-  };
-  isOnboarded?: boolean;
+  gender: string;
+  bio?: string;
+  profileImage?: string;
 };
 
 export type Match = {
@@ -39,7 +36,8 @@ export type ChatSuggestion = {
 };
 
 class DatingAppStore {
-  user: User | null = null;
+  users: User[] = [];
+  currentUser: User | null = null;
   matches: Match[] = [];
   messages: Record<string, Message[]> = {}; // matchId -> messages
   suggestions: Record<string, ChatSuggestion[]> = {}; // matchId -> suggestions
@@ -49,14 +47,22 @@ class DatingAppStore {
     makeAutoObservable(this);
   }
 
+  setUsers(users: User[]) {
+    this.users = users;
+  }
+
+  setCurrentUser(user: User | null) {
+    this.currentUser = user;
+  }
+
   // User actions
   setUser(user: User) {
-    this.user = user;
+    this.currentUser = user;
   }
 
   updateUserProfile(updates: Partial<User>) {
-    if (this.user) {
-      this.user = { ...this.user, ...updates };
+    if (this.currentUser) {
+      this.currentUser = { ...this.currentUser, ...updates };
     }
   }
 
@@ -88,4 +94,31 @@ class DatingAppStore {
   }
 }
 
-export const store = new DatingAppStore(); 
+class RootStore {
+  auth = authStore;
+  match = matchStore;
+  profile = profileStore;
+  datingApp = new DatingAppStore();
+
+  constructor() {
+    // Initialize stores if needed
+  }
+
+  async initialize() {
+    // Load initial data if user is authenticated
+    if (this.auth.isAuthenticated) {
+      await Promise.all([
+        this.profile.loadProfile(),
+        this.match.loadMatches(),
+      ]);
+    }
+  }
+
+  async logout() {
+    await this.auth.logout();
+    this.profile.clearProfile();
+    this.match.clearCurrentMatch();
+  }
+}
+
+export const rootStore = new RootStore(); 

@@ -1,33 +1,25 @@
 import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../theme/colors";
 
-// Auth Screens
-import LoginScreen from "../screens/auth/LoginScreen";
-import RegisterScreen from "../screens/auth/RegisterScreen";
-import OnboardingScreen from "../screens/OnboardingScreen";
-
-// Main Screens
+// Import screens
 import MatchesScreen from "../screens/main/MatchesScreen";
 import ChatScreen from "../screens/main/ChatScreen";
 import ProfileScreen from "../screens/main/ProfileScreen";
 
-import { colors } from "../theme/colors";
-
-export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Onboarding: undefined;
+export type MainStackParamList = {
   MainTabs: undefined;
-  Chat: { matchId: string };
+  Matches: undefined;
+  Chat: { matchId?: string };
+  Profile: undefined;
 };
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator<MainStackParamList>();
+const Tab = createBottomTabNavigator<MainStackParamList>();
 
-const MainTabs = () => {
+const TabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -51,8 +43,9 @@ const MainTabs = () => {
         tabBarStyle: {
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          paddingBottom: 5,
-          paddingTop: 5,
+          paddingTop: 8,
+          paddingBottom: 8,
+          height: 60,
         },
       })}
     >
@@ -66,6 +59,7 @@ const MainTabs = () => {
       <Tab.Screen
         name="Chat"
         component={ChatScreen}
+        initialParams={{ matchId: undefined }}
         options={{
           headerShown: false,
         }}
@@ -81,34 +75,16 @@ const MainTabs = () => {
   );
 };
 
-const RootNavigator: React.FC = () => {
-  // For development, we'll start directly at MainTabs
+const MainStack = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="MainTabs"
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen
-          name="Chat"
-          component={ChatScreen}
-          options={{
-            headerShown: true,
-            headerTitle: "Chat",
-            headerBackTitle: "Back",
-          }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator>
+      <Stack.Screen
+        name="MainTabs"
+        component={TabNavigator}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
   );
 };
 
-RootNavigator.displayName = "RootNavigator";
-
-export default RootNavigator;
+export default MainStack;

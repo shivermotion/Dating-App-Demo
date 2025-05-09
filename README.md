@@ -1,76 +1,124 @@
-# Dating App Demo
+# AI-First Dating App
 
-A modern dating application built with React Native, featuring AI-powered matching and conversation features.
+A proof-of-concept dating app that uses AI for matching, chat suggestions, and content moderation. Built with React Native, Express, and local AI models.
 
 ## Features
 
-- AI-powered profile matching
-- Real-time chat with AI suggestions
-- Modern, clean UI design
-- Profile customization
-- Interest-based matching
-- Personality trait analysis
+- AI-powered user trait analysis and matching
+- Daily "Top 3" compatible matches with diversity penalty
+- AI Wingman for first-message suggestions
+- Real-time chat with sentiment analysis
+- Content moderation using local AI models
+- Vector similarity search for matching
 
 ## Tech Stack
 
-- React Native
-- Expo
-- TypeScript
-- MobX for state management
-- NativeWind for styling
-- GlueStack UI components
+- **Frontend**: React Native + Expo (TypeScript)
+- **Backend**: Express (TypeScript)
+- **Database**: PostgreSQL with pgvector
+- **AI Models**: Local Ollama (llama2)
+- **Real-time**: Socket.IO
+- **Auth**: JWT
 
-## Getting Started
+## Prerequisites
+
+- Docker and Docker Compose
+- Node.js 18+
+- Yarn
+- Ollama (for local AI models)
+
+## Setup
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/dating-app-demo.git
-cd dating-app-demo
+git clone <repository-url>
+cd dating-app
 ```
 
-2. Install dependencies:
+2. Install frontend dependencies:
 
 ```bash
 yarn install
 ```
 
-3. Start the development server:
+3. Start the development environment:
+
+```bash
+docker compose up -d
+```
+
+4. Initialize the database:
+
+```bash
+cd backend
+yarn prisma:migrate
+```
+
+5. Start the frontend development server:
 
 ```bash
 yarn start
 ```
 
-4. Run on iOS:
+## Development
+
+### Backend
+
+The backend is built with Express and TypeScript. Key features:
+
+- User authentication and profile management
+- AI-powered matching algorithm
+- Real-time chat with Socket.IO
+- Content moderation and sentiment analysis
+
+To run the backend in development mode:
 
 ```bash
-yarn ios
+cd backend
+yarn dev
 ```
 
-5. Run on Android:
+### Frontend
+
+The frontend is built with React Native and Expo. Key features:
+
+- Modern, responsive UI
+- Real-time chat interface
+- Profile management
+- Match discovery
+
+To run the frontend in development mode:
 
 ```bash
-yarn android
+yarn start
 ```
 
-## Project Structure
+## AI Features
 
-```
-src/
-  ├── screens/        # Screen components
-  ├── navigation/     # Navigation configuration
-  ├── store/         # MobX store
-  ├── types/         # TypeScript types
-  └── components/    # Reusable components
-```
+### Matching Algorithm
+
+The app uses vector embeddings of user traits to find compatible matches. The algorithm:
+
+1. Generates embeddings from user traits using Ollama
+2. Calculates cosine similarity between users
+3. Applies a diversity penalty to ensure varied matches
+4. Returns the top 3 matches daily
+
+### Chat Features
+
+- AI-powered first message suggestions
+- Real-time sentiment analysis
+- Content moderation using local AI models
+- Chat suggestions based on context
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
