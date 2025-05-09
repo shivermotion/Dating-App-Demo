@@ -100,22 +100,96 @@ DatingAppDemo/
    ollama run llama2:7b
    ```
 
-6. Start the development servers:
+## Running the Application
+
+### Backend Server
+
+1. Navigate to the backend directory:
 
    ```bash
-   # Terminal 1 - Start backend server
    cd backend
-   yarn dev
+   ```
 
-   # Terminal 2 - Start frontend app
+2. Start the development server:
+
+   ```bash
+   yarn dev
+   ```
+
+   The server will start on http://localhost:3001
+
+3. Verify the server is running:
+   ```bash
+   curl http://localhost:3001/health
+   # Should return: {"status":"ok"}
+   ```
+
+### Frontend App
+
+1. Open a new terminal window and navigate to the frontend directory:
+
+   ```bash
    cd src
+   ```
+
+2. Start the Expo development server:
+
+   ```bash
    yarn start
    ```
 
-7. Run the app:
-   - Install Expo Go on your mobile device
-   - Scan the QR code from the Expo development server
-   - Or run on simulators/emulators using the Expo CLI
+   This will start the Metro bundler and show a QR code.
+
+3. Run the app:
+   - **On iOS Simulator:**
+     ```bash
+     yarn ios
+     ```
+   - **On Android Emulator:**
+     ```bash
+     yarn android
+     ```
+   - **On Physical Device:**
+     - Install Expo Go from the App Store (iOS) or Play Store (Android)
+     - Scan the QR code with your device's camera
+     - The app will open in Expo Go
+
+### Development Workflow
+
+1. **Backend Development:**
+
+   - The server will automatically restart when you make changes
+   - API endpoints are available at `http://localhost:3001/api/*`
+   - Check the console for server logs and errors
+
+2. **Frontend Development:**
+
+   - Changes will automatically reload in the app
+   - Use the Expo developer menu (shake device or press 'd' in terminal)
+   - Enable Fast Refresh in the developer menu for instant updates
+
+3. **Testing the Full Stack:**
+   - Backend API: Use the Postman collection in `backend/postman/`
+   - Frontend: Test the onboarding flow and chat features
+   - Real-time features: Test chat functionality between multiple devices
+
+### Troubleshooting
+
+1. **Backend Issues:**
+
+   - Check if PostgreSQL is running: `pg_isready`
+   - Verify Ollama is running: `curl http://localhost:11434/api/version`
+   - Check server logs for detailed error messages
+
+2. **Frontend Issues:**
+
+   - Clear Metro bundler cache: `yarn start --clear`
+   - Reset Expo cache: `expo start -c`
+   - Check Expo logs in the terminal
+
+3. **Database Issues:**
+   - Reset database: `yarn prisma migrate reset`
+   - Regenerate Prisma client: `yarn prisma generate`
 
 ## Development
 
