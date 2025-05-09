@@ -1,161 +1,110 @@
-import { makeAutoObservable, action } from 'mobx';
-import { matchingService } from '../services/matching';
-import { chatService } from '../services/chat';
-import { users } from '../services/api';
+import { makeAutoObservable, action } from "mobx";
+import { apiService } from "../services/api";
+import type { Match, Message } from "../types";
 
-export interface User {
-  id: string;
-  name: string;
-  age: number;
-  bio: string;
-  profileImage: string;
-  traits: string[];
-  isOnline?: boolean;
-}
-
-export interface Match {
-  id: string;
-  user: User;
-  isNew: boolean;
-  score: number;
-  lastMessage?: string;
-  lastMessageTime?: string;
-}
-
-export interface Message {
-  id: string;
-  text: string;
-  senderId: string;
-  timestamp: string;
-  isFromUser: boolean;
-  sentiment?: number;
-  toxicity?: number;
-}
-
-export class MatchStore {
+class MatchStore {
   matches: Match[] = [];
   selectedMatch: Match | null = null;
   messages: Message[] = [];
   isLoading = false;
   error: string | null = null;
-  recentMatches: User[] = [];
   chatSuggestions: string[] = [];
 
   constructor() {
-    makeAutoObservable(this, {
-      setLoading: action,
-      setError: action,
-      setMatches: action,
-      setMessages: action,
-      setSelectedMatch: action,
-      setChatSuggestions: action,
-    });
+    makeAutoObservable(this);
   }
 
-  setLoading(loading: boolean) {
+  setLoading = action((loading: boolean) => {
     this.isLoading = loading;
-  }
+  });
 
-  setError(error: string | null) {
+  setError = action((error: string | null) => {
     this.error = error;
-  }
+  });
 
-  setMatches(matches: Match[]) {
+  setMatches = action((matches: Match[]) => {
     this.matches = matches;
-  }
+  });
 
-  setMessages(messages: Message[]) {
-    this.messages = messages;
-  }
-
-  setSelectedMatch(match: Match | null) {
+  setSelectedMatch = action((match: Match | null) => {
     this.selectedMatch = match;
-  }
+  });
 
-  setChatSuggestions(suggestions: string[]) {
+  setMessages = action((messages: Message[]) => {
+    this.messages = messages;
+  });
+
+  setChatSuggestions = action((suggestions: string[]) => {
     this.chatSuggestions = suggestions;
-  }
+  });
 
-  async loadMatches() {
-    this.setLoading(true);
-    this.setError(null);
-
+  loadTodayMatches = action(async () => {
     try {
-      const matches = await users.getMatches('current-user');
+      this.setLoading(true);
+      this.setError(null);
+      const matches = await apiService.matches.getToday();
       this.setMatches(matches);
-      return matches;
-    } catch (error: any) {
-      this.setError(error.message || 'Failed to load matches');
-      throw error;
-    } finally {
-      this.setLoading(false);
-    }
-  }
-
-  selectMatch(matchId: string) {
-    const match = this.matches.find((m) => m.id === matchId);
-    if (match) {
-      this.setSelectedMatch(match);
-      match.isNew = false;
-      this.loadMessages(matchId);
-      this.loadSuggestions(matchId);
-    }
-  }
-
-  async loadMessages(matchId: string) {
-    this.setLoading(true);
-    this.setError(null);
-
-    try {
-      const messages = await users.getMessages(matchId);
-      this.setMessages(messages);
-      return messages;
-    } catch (error: any) {
-      this.setError(error.message || 'Failed to load messages');
-      throw error;
-    } finally {
-      this.setLoading(false);
-    }
-  }
-
-  async sendMessage(matchId: string, text: string) {
-    try {
-      const message = await users.sendMessage(matchId, text);
-      this.setMessages([...this.messages, message]);
-      
-      // Update last message in matches list
-      const match = this.matches.find((m) => m.id === matchId);
-      if (match) {
-        match.lastMessage = text;
-        match.lastMessageTime = message.timestamp;
-      }
-
-      return message;
-    } catch (error: any) {
-      this.setError(error.message || 'Failed to send message');
-      throw error;
-    }
-  }
-
-  async loadSuggestions(matchId: string) {
-    try {
-      const { suggestion } = await users.getSuggestion(matchId);
-      this.setChatSuggestions([suggestion]);
-      return suggestion;
     } catch (error) {
-      console.error('Error loading suggestions:', error);
-      this.setChatSuggestions([]);
+      this.setError(error instanceof Error ? error.message : "Failed to load matches");
+    } finally {
+      this.setLoading(false);
     }
-  }
+  });
 
-  reset() {
-    this.setMatches([]);
-    this.setSelectedMatch(null);
-    this.setMessages([]);
-    this.setLoading(false);
-    this.setError(null);
-    this.setChatSuggestions([]);
-  }
+  passMatch = action(async (matchId: string) => {
+    try {
+      this.setLoading(true);
+      this.setError(null);
+      await apiService.matches.pass(matchId);
+      this.setMatches(this.matches.filter(match => match.id !== matchId));
+    } catch (error) {
+      this.setError(error instanceof Error ? error.message : "Failed to pass match");
+    } finally {
+      this.setLoading(false);
+    }
+  });
+
+  likeMatch = action(async (matchId: string) => {
+    try {
+      this.setLoading(true);
+      this.setError(null);
+      await apiService.matches.like(matchId);
+      const updatedMatch = await apiService.matches.getById(matchId);
+      this.setMatches(this.matches.map(match => 
+        match.id === matchId ? updatedMatch : match
+      ));
+    } catch (error) {
+      this.setError(error instanceof Error ? error.message : "Failed to like match");
+    } finally {
+      this.setLoading(false);
+    }
+  });
+
+  loadMessages = action(async (matchId: string) => {
+    try {
+      this.setLoading(true);
+      this.setError(null);
+      const messages = await apiService.messages.getByMatchId(matchId);
+      this.setMessages(messages);
+    } catch (error) {
+      this.setError(error instanceof Error ? error.message : "Failed to load messages");
+    } finally {
+      this.setLoading(false);
+    }
+  });
+
+  sendMessage = action(async (matchId: string, text: string) => {
+    try {
+      this.setLoading(true);
+      this.setError(null);
+      const message = await apiService.messages.send(matchId, text);
+      this.setMessages([...this.messages, message]);
+    } catch (error) {
+      this.setError(error instanceof Error ? error.message : "Failed to send message");
+    } finally {
+      this.setLoading(false);
+    }
+  });
 }
 
 export const matchStore = new MatchStore(); 

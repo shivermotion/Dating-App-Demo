@@ -1,0 +1,67 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id        Int      @id @default(autoincrement())
+    email     String   @unique
+    name      String
+    bio       String
+    traits    Json
+    interests String[]
+    embedding Float[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    matchesAsA Match[]    @relation("UserA")
+    matchesAsB Match[]    @relation("UserB")
+    messages   Message[]
+    chatRooms  ChatRoom[] @relation("ChatRoomParticipants")
+}
+
+model Match {
+    id     Int      @id @default(autoincrement())
+    userA  Int
+    userB  Int
+    date   DateTime @default(now())
+    score  Float
+    status String   @default("pending")
+
+    // Relations
+    userARel User      @relation("UserA", fields: [userA], references: [id])
+    userBRel User      @relation("UserB", fields: [userB], references: [id])
+    chatRoom ChatRoom?
+
+    @@unique([userA, userB, date])
+}
+
+model Message {
+    id        Int      @id @default(autoincrement())
+    roomId    Int
+    senderId  Int
+    text      String
+    timestamp DateTime @default(now())
+    sentiment Float?
+    toxicity  Float?
+
+    // Relations
+    room   ChatRoom @relation(fields: [roomId], references: [id])
+    sender User     @relation(fields: [senderId], references: [id])
+}
+
+model ChatRoom {
+    id        Int      @id @default(autoincrement())
+    matchId   Int      @unique
+    createdAt DateTime @default(now())
+
+    // Relations
+    match        Match     @relation(fields: [matchId], references: [id])
+    messages     Message[]
+    participants User[]    @relation("ChatRoomParticipants")
+}

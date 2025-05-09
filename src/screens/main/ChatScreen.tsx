@@ -1,118 +1,84 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
-  FlatList,
-  TextInput,
+  ActivityIndicator,
+  Text,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   ScrollView,
 } from "react-native";
 import { observer } from "mobx-react-lite";
 import { rootStore } from "../../store";
 import { colors } from "../../theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useRoute, useNavigation } from "@react-navigation/native";
-import { RouteProp } from "@react-navigation/native";
-import { MainStackParamList } from "../../navigation/MainStack";
+import type { Message } from "../../types";
+import { apiService } from "../../services/api";
+import { Input, Button } from "@rneui/themed";
 
-type ChatScreenRouteProp = RouteProp<MainStackParamList, "Chat">;
+interface ChatMessage {
+  id: string;
+  text: string;
+  senderId: string;
+  timestamp: Date;
+  sender?: {
+    name: string;
+    profileImage?: string;
+  };
+}
 
-const ChatScreen = observer(() => {
-  const route = useRoute<ChatScreenRouteProp>();
-  const navigation = useNavigation();
-  const matchId = route.params?.matchId;
-  const [message, setMessage] = useState("");
-  const flatListRef = useRef<FlatList>(null);
+const ChatScreen = observer(({ route, navigation }: any) => {
+  const matchId = route?.params?.matchId;
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [inputText, setInputText] = useState("");
 
   useEffect(() => {
-    if (matchId) {
-      rootStore.match.loadMessages(matchId);
+    if (!matchId) {
+      navigation.goBack();
+      return;
     }
-  }, [matchId]);
 
-  const handleSend = async () => {
-    if (!message.trim()) return;
+    rootStore.match.loadMessages(matchId);
+    loadSuggestion();
+  }, [matchId, navigation]);
+
+  const loadSuggestion = async () => {
+    if (!matchId) return;
 
     try {
-      await rootStore.match.sendMessage(matchId, message.trim());
-      setMessage("");
-      flatListRef.current?.scrollToEnd();
+      const response = await apiService.users.getSuggestion();
+      setSuggestion(response.text);
     } catch (error) {
-      // Error is handled by the store
+      console.error("Error loading suggestion:", error);
     }
   };
 
-  const renderMessage = ({ item }: { item: any }) => {
-    const isMe = item.isFromUser;
-    const sentiment = item.sentiment || 0;
-    const toxicity = item.toxicity || 0;
+  const handleSend = async () => {
+    if (!matchId || !inputText.trim()) return;
 
-    return (
-      <View
-        style={[
-          styles.messageContainer,
-          isMe ? styles.userMessage : styles.matchMessage,
-        ]}
-      >
-        <Text
-          style={[
-            styles.messageText,
-            isMe ? styles.userMessageText : styles.matchMessageText,
-          ]}
-        >
-          {item.text}
-        </Text>
-        <View style={styles.messageMeta}>
-          <Text style={styles.timestamp}>
-            {new Date(item.timestamp).toLocaleTimeString()}
-          </Text>
-          {sentiment !== 0 && (
-            <Ionicons
-              name={sentiment > 0 ? "happy" : "sad"}
-              size={16}
-              color={sentiment > 0 ? colors.success : colors.error}
-              style={styles.sentimentIcon}
-            />
-          )}
-        </View>
-      </View>
-    );
+    await rootStore.match.sendMessage(matchId, inputText.trim());
+    setInputText("");
+    setSuggestion(null);
   };
 
-  const renderSuggestions = () => {
-    if (!rootStore.match.chatSuggestions.length) return null;
-
-    return (
-      <View style={styles.suggestionsContainer}>
-        <Text style={styles.suggestionsTitle}>AI Suggestions</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {rootStore.match.chatSuggestions.map((suggestion, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.suggestionButton}
-              onPress={() => setMessage(suggestion)}
-            >
-              <Text style={styles.suggestionText}>{suggestion}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    );
+  const formatMessages = (messages: Message[]): ChatMessage[] => {
+    return messages.map((message) => ({
+      id: message.id,
+      text: message.text,
+      timestamp: new Date(message.timestamp),
+      senderId: message.senderId,
+      sender: {
+        name: message.sender?.name || "Unknown",
+        profileImage: message.sender?.profileImage,
+      },
+    }));
   };
 
   if (!matchId) {
     return (
-      <View style={styles.emptyContainer}>
-        <Ionicons
-          name="chatbubbles-outline"
-          size={64}
-          color={colors.gray[400]}
-        />
-        <Text style={styles.emptyText}>Select a match to start chatting</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>Invalid chat room</Text>
       </View>
     );
   }
@@ -139,46 +105,54 @@ const ChatScreen = observer(() => {
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {rootStore.match.selectedMatch?.user.name}
-        </Text>
-      </View>
-
-      <FlatList
-        ref={flatListRef}
-        data={rootStore.match.messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.messagesList}
-        inverted
-      />
-
-      {renderSuggestions()}
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={message}
-          onChangeText={setMessage}
-          placeholder="Type a message..."
-          multiline
-          maxLength={500}
-        />
+      {suggestion && (
         <TouchableOpacity
-          style={[
-            styles.sendButton,
-            !message.trim() && styles.sendButtonDisabled,
-          ]}
-          onPress={handleSend}
-          disabled={!message.trim()}
+          style={styles.suggestionContainer}
+          onPress={() => {
+            setInputText(suggestion);
+            handleSend();
+          }}
         >
-          <Ionicons
-            name="send"
-            size={24}
-            color={message.trim() ? colors.white : colors.gray[400]}
-          />
+          <Ionicons name="bulb-outline" size={20} color={colors.primary} />
+          <Text style={styles.suggestionText}>{suggestion}</Text>
         </TouchableOpacity>
+      )}
+      <ScrollView style={styles.messagesContainer}>
+        {formatMessages(rootStore.match.messages).map((message) => (
+          <View
+            key={message.id}
+            style={[
+              styles.messageContainer,
+              message.senderId === "current-user"
+                ? styles.userMessage
+                : styles.otherMessage,
+            ]}
+          >
+            <Text style={styles.messageText}>{message.text}</Text>
+            <Text style={styles.messageTime}>
+              {message.timestamp.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+          </View>
+        ))}
+      </ScrollView>
+      <View style={styles.inputContainer}>
+        <Input
+          value={inputText}
+          onChangeText={setInputText}
+          placeholder="Type your message..."
+          containerStyle={styles.input}
+          inputContainerStyle={styles.inputContainerStyle}
+          inputStyle={styles.inputStyle}
+        />
+        <Button
+          onPress={handleSend}
+          icon={<Ionicons name="send" size={24} color={colors.white} />}
+          buttonStyle={styles.sendButton}
+          disabled={!inputText.trim()}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -205,20 +179,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
-  header: {
-    backgroundColor: colors.white,
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  messagesList: {
-    padding: 16,
+  suggestionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.gray[100],
+    padding: 12,
+    margin: 8,
+    borderRadius: 12,
     gap: 8,
+  },
+  suggestionText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+  },
+  messagesContainer: {
+    flex: 1,
+    padding: 16,
   },
   messageContainer: {
     maxWidth: "80%",
@@ -230,94 +207,44 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
     backgroundColor: colors.primary,
   },
-  matchMessage: {
+  otherMessage: {
     alignSelf: "flex-start",
-    backgroundColor: colors.gray[200],
+    backgroundColor: colors.gray[100],
   },
   messageText: {
     fontSize: 16,
     color: colors.text,
   },
-  userMessageText: {
-    color: colors.text,
-  },
-  matchMessageText: {
-    color: colors.text,
-  },
-  messageMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  timestamp: {
+  messageTime: {
     fontSize: 12,
     color: colors.textSecondary,
-  },
-  sentimentIcon: {
-    marginLeft: 8,
+    marginTop: 4,
+    alignSelf: "flex-end",
   },
   inputContainer: {
     flexDirection: "row",
-    padding: 16,
+    alignItems: "center",
+    padding: 8,
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   input: {
     flex: 1,
-    backgroundColor: colors.gray[100],
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
+    marginBottom: 0,
+  },
+  inputContainerStyle: {
+    borderBottomWidth: 0,
+  },
+  inputStyle: {
     fontSize: 16,
-    maxHeight: 100,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sendButtonDisabled: {
-    backgroundColor: colors.gray[200],
-  },
-  suggestionsContainer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.white,
-  },
-  suggestionsTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  suggestionButton: {
-    backgroundColor: colors.gray[100],
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  suggestionText: {
-    color: colors.text,
-    fontSize: 14,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 16,
-    textAlign: "center",
+    marginLeft: 8,
   },
 });
 

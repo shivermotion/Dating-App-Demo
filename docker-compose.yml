@@ -2,38 +2,46 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:15
+    image: ankane/pgvector:latest
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: dating_app
+      POSTGRES_USER: datingapp
+      POSTGRES_PASSWORD: datingapp
+      POSTGRES_DB: datingapp
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-
-  backend:
+  server:
     build:
-      context: ./backend
+      context: ./packages/server
       dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/dating_app?schema=public
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - CLIENT_URL=http://localhost:3000
-      - OLLAMA_API_URL=http://ollama:11434/api
+      DATABASE_URL: postgresql://datingapp:datingapp@postgres:5432/datingapp
+      PORT: 3000
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
     depends_on:
       - postgres
-      - ollama
+    volumes:
+      - ./packages/server:/app
+      - /app/node_modules
+
+  chat-service:
+    build:
+      context: ./packages/chat-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
+    depends_on:
+      - server
+    volumes:
+      - ./packages/chat-service:/app
+      - /app/node_modules
 
 volumes:
-  postgres_data:
-  ollama_data: 
+  postgres_data: 

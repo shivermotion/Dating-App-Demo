@@ -8,30 +8,35 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import { observer } from "mobx-react-lite";
 import { colors } from "../../theme/colors";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/RootNavigator";
+import { Ionicons } from "@expo/vector-icons";
+import { rootStore } from "../../store";
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const LoginScreen = observer(() => {
+const LoginScreen = observer(({ navigation }: any) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = () => {
-    // Temporarily bypass auth and go straight to main screens
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "MainTabs" }],
-    });
-  };
-
-  const handleRegister = () => {
-    navigation.navigate("Register");
+  const handleLogin = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      // For development, skip authentication and go directly to onboarding
+      navigation.replace("Onboarding");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to login");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -39,42 +44,73 @@ const LoginScreen = observer(() => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.header}>
+          <Ionicons name="heart" size={64} color={colors.primary} />
+          <Text style={styles.title}>Welcome Back!</Text>
+          <Text style={styles.subtitle}>
+            Sign in to continue your dating journey
+          </Text>
+        </View>
 
         <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-          />
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color={colors.gray[400]} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholderTextColor={colors.gray[400]}
+            />
+          </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="password"
-          />
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color={colors.gray[400]}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholderTextColor={colors.gray[400]}
+            />
+          </View>
 
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Sign In</Text>
+          {error && <Text style={styles.errorText}>{error}</Text>}
+
+          <TouchableOpacity
+            style={[styles.button, isLoading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.buttonText}>Sign In</Text>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.linkButton} onPress={handleRegister}>
-            <Text style={styles.linkText}>
-              Don't have an account? <Text style={styles.link}>Sign Up</Text>
+          <TouchableOpacity
+            style={styles.registerButton}
+            onPress={() => navigation.navigate("Register")}
+          >
+            <Text style={styles.registerText}>
+              Don't have an account?{" "}
+              <Text style={styles.registerTextBold}>Sign Up</Text>
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 });
@@ -84,32 +120,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     padding: 20,
-    justifyContent: "center",
+  },
+  header: {
+    alignItems: "center",
+    marginTop: 60,
+    marginBottom: 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
     color: colors.text,
-    marginBottom: 8,
+    marginTop: 16,
   },
   subtitle: {
     fontSize: 16,
     color: colors.textSecondary,
-    marginBottom: 32,
+    marginTop: 8,
   },
   form: {
     gap: 16,
   },
-  input: {
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
+    paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    color: colors.text,
   },
   button: {
     backgroundColor: colors.primary,
@@ -118,20 +166,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
   buttonText: {
     color: colors.white,
     fontSize: 16,
     fontWeight: "600",
   },
-  linkButton: {
+  errorText: {
+    color: colors.error,
+    fontSize: 14,
+    textAlign: "center",
+  },
+  registerButton: {
     marginTop: 16,
     alignItems: "center",
   },
-  linkText: {
-    color: colors.textSecondary,
+  registerText: {
     fontSize: 14,
+    color: colors.textSecondary,
   },
-  link: {
+  registerTextBold: {
     color: colors.primary,
     fontWeight: "600",
   },

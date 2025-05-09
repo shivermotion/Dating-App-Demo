@@ -1,125 +1,97 @@
 # AI-First Dating App
 
-A proof-of-concept dating app that uses AI for matching, chat suggestions, and content moderation. Built with React Native, Express, and local AI models.
+A modern dating application that uses AI to enhance the matching and chat experience.
 
 ## Features
 
-- AI-powered user trait analysis and matching
-- Daily "Top 3" compatible matches with diversity penalty
-- AI Wingman for first-message suggestions
-- Real-time chat with sentiment analysis
-- Content moderation using local AI models
-- Vector similarity search for matching
+- 🤖 AI-powered onboarding with personality analysis
+- 💝 Daily curated matches using vector similarity
+- 💬 Real-time chat with AI wingman suggestions
+- 🛡️ Toxicity detection and sentiment analysis
+- 📱 Beautiful mobile-first UI with Expo
 
 ## Tech Stack
 
-- **Frontend**: React Native + Expo (TypeScript)
-- **Backend**: Express (TypeScript)
+- **Frontend**: React Native (Expo), TypeScript, MobX
+- **Backend**: Express.js, TypeScript, Prisma
 - **Database**: PostgreSQL with pgvector
-- **AI Models**: Local Ollama (llama2)
-- **Real-time**: Socket.IO
-- **Auth**: JWT
-
-## Prerequisites
-
-- Docker and Docker Compose
-- Node.js 18+
-- Yarn
-- Ollama (for local AI models)
+- **AI**: Ollama (Llama 2), Hugging Face models
+- **Real-time**: Socket.io
+- **DevOps**: Docker, GitHub Actions
 
 ## Setup
 
-1. Clone the repository:
+1. Install dependencies:
 
-```bash
-git clone <repository-url>
-cd dating-app
-```
+   ```bash
+   brew install ollama
+   yarn install
+   ```
 
-2. Install frontend dependencies:
+2. Start Ollama:
 
-```bash
-yarn install
-```
+   ```bash
+   ollama serve
+   ollama run llama2:7b
+   ```
 
 3. Start the development environment:
+   ```bash
+   yarn dev
+   ```
 
-```bash
-docker compose up -d
-```
+This will start:
 
-4. Initialize the database:
-
-```bash
-cd backend
-yarn prisma:migrate
-```
-
-5. Start the frontend development server:
-
-```bash
-yarn start
-```
+- PostgreSQL database
+- Express API server
+- Socket.io chat service
+- Expo development server
 
 ## Development
 
-### Backend
+- `packages/mobile`: Expo React Native app
+- `packages/server`: Express API
+- `packages/chat-service`: Socket.io server
+- `packages/shared`: TypeScript types
+- `packages/scripts`: Development utilities
 
-The backend is built with Express and TypeScript. Key features:
+## API Documentation
 
-- User authentication and profile management
-- AI-powered matching algorithm
-- Real-time chat with Socket.IO
-- Content moderation and sentiment analysis
+See `docs/api.md` for detailed API documentation.
 
-To run the backend in development mode:
+## Next Steps (TODO)
 
-```bash
-cd backend
-yarn dev
-```
+### Premium Features
 
-### Frontend
+- [ ] Truepic integration for photo verification
+- [ ] Pinecone for scalable vector search
+- [ ] GPT-4 for enhanced chat suggestions
+- [ ] Advanced matching algorithms
+- [ ] Premium subscription model
 
-The frontend is built with React Native and Expo. Key features:
+### Infrastructure
 
-- Modern, responsive UI
-- Real-time chat interface
-- Profile management
-- Match discovery
+- [ ] AWS deployment
+- [ ] CI/CD pipeline
+- [ ] Monitoring and analytics
+- [ ] Rate limiting
+- [ ] Caching layer
 
-To run the frontend in development mode:
+### Security
 
-```bash
-yarn start
-```
-
-## AI Features
-
-### Matching Algorithm
-
-The app uses vector embeddings of user traits to find compatible matches. The algorithm:
-
-1. Generates embeddings from user traits using Ollama
-2. Calculates cosine similarity between users
-3. Applies a diversity penalty to ensure varied matches
-4. Returns the top 3 matches daily
-
-### Chat Features
-
-- AI-powered first message suggestions
-- Real-time sentiment analysis
-- Content moderation using local AI models
-- Chat suggestions based on context
+- [ ] End-to-end encryption
+- [ ] Two-factor authentication
+- [ ] GDPR compliance
+- [ ] Regular security audits
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create your feature branch
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT

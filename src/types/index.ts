@@ -3,35 +3,58 @@ export interface User {
   name: string;
   age: number;
   bio: string;
-  interests: string[];
-  photos: string[];
-  personalityTraits: string[];
-  location: {
-    city: string;
-    country: string;
-  };
-  isOnboarded?: boolean;
+  profileImage: string;
+  traits: string[];
+  isOnline: boolean;
 }
 
 export interface Match {
   id: string;
-  name: string;
-  age: number;
-  bio: string;
-  photos: string[];
-  compatibility: number;
-  interests: string[];
-  personalityTraits: string[];
+  user: User;
+  score: number;
+  status: 'pending' | 'liked' | 'passed';
+  lastMessage?: Message;
+  lastMessageTime?: string;
 }
 
 export interface Message {
   id: string;
   text: string;
-  sender: "user" | "match";
-  timestamp: Date;
+  senderId: string;
+  timestamp: string;
+  isFromUser: boolean;
+  sender?: User;
 }
 
-export interface ChatSuggestion {
+export interface ChatRoom {
   id: string;
+  matchId: string;
+  participants: User[];
+  lastMessage?: Message;
+  createdAt: string;
+}
+
+export interface OnboardingResponse {
+  bio: string;
+  traits: string[];
+  interests: string[];
+}
+
+export interface SentimentResponse {
+  label: 'positive' | 'negative' | 'neutral';
+  score: number;
+}
+
+export interface ToxicityResponse {
+  toxic: boolean;
+  score: number;
+  categories: {
+    [key: string]: number;
+  };
+}
+
+export interface AISuggestion {
+  type: 'conversation' | 'date' | 'icebreaker';
   text: string;
+  confidence: number;
 } 

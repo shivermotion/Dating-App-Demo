@@ -19,28 +19,25 @@ const { width } = Dimensions.get("window");
 
 const MatchesScreen = observer(({ navigation }: any) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("all");
 
   useEffect(() => {
-    rootStore.match.loadMatches();
+    rootStore.match.loadTodayMatches();
   }, []);
 
-  const filteredMatches = rootStore.match.matches.filter((match) => {
-    const matchesSearch = match.user.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesFilter =
-      selectedFilter === "all" ||
-      (selectedFilter === "new" && match.isNew) ||
-      (selectedFilter === "online" && match.user.isOnline);
-    return matchesSearch && matchesFilter;
-  });
+  const handlePass = async (matchId: string) => {
+    await rootStore.match.passMatch(matchId);
+  };
+
+  const handleLike = async (matchId: string) => {
+    await rootStore.match.likeMatch(matchId);
+  };
+
+  const handleChat = (matchId: string) => {
+    navigation.navigate("Chat", { matchId });
+  };
 
   const renderMatch = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.matchCard}
-      onPress={() => navigation.navigate("Chat", { matchId: item.id })}
-    >
+    <View style={styles.matchCard}>
       <View style={styles.imageContainer}>
         <Image
           source={{
@@ -49,11 +46,6 @@ const MatchesScreen = observer(({ navigation }: any) => {
           style={styles.profileImage}
         />
         {item.user.isOnline && <View style={styles.onlineIndicator} />}
-        {item.isNew && (
-          <View style={styles.newBadge}>
-            <Text style={styles.newBadgeText}>New</Text>
-          </View>
-        )}
       </View>
       <View style={styles.matchInfo}>
         <View style={styles.nameContainer}>
@@ -77,26 +69,27 @@ const MatchesScreen = observer(({ navigation }: any) => {
           </Text>
         </View>
       </View>
-    </TouchableOpacity>
-  );
-
-  const renderFilterButton = (filter: string, label: string) => (
-    <TouchableOpacity
-      style={[
-        styles.filterButton,
-        selectedFilter === filter && styles.filterButtonActive,
-      ]}
-      onPress={() => setSelectedFilter(filter)}
-    >
-      <Text
-        style={[
-          styles.filterButtonText,
-          selectedFilter === filter && styles.filterButtonTextActive,
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.passButton]}
+          onPress={() => handlePass(item.id)}
+        >
+          <Ionicons name="close" size={24} color={colors.error} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.likeButton]}
+          onPress={() => handleLike(item.id)}
+        >
+          <Ionicons name="heart" size={24} color={colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.chatButton]}
+          onPress={() => handleChat(item.id)}
+        >
+          <Ionicons name="chatbubble" size={24} color={colors.success} />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 
   if (rootStore.match.isLoading) {
@@ -118,7 +111,7 @@ const MatchesScreen = observer(({ navigation }: any) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Your Matches</Text>
+        <Text style={styles.title}>Today's Picks</Text>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color={colors.gray[400]} />
           <TextInput
@@ -129,14 +122,9 @@ const MatchesScreen = observer(({ navigation }: any) => {
             placeholderTextColor={colors.gray[400]}
           />
         </View>
-        <View style={styles.filterContainer}>
-          {renderFilterButton("all", "All")}
-          {renderFilterButton("new", "New")}
-          {renderFilterButton("online", "Online")}
-        </View>
       </View>
       <FlatList
-        data={filteredMatches}
+        data={rootStore.match.matches}
         renderItem={renderMatch}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
@@ -185,7 +173,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray[100],
     borderRadius: 12,
     paddingHorizontal: 12,
-    marginBottom: 16,
   },
   searchInput: {
     flex: 1,
@@ -193,27 +180,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     fontSize: 16,
     color: colors.text,
-  },
-  filterContainer: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.gray[100],
-  },
-  filterButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  filterButtonText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  filterButtonTextActive: {
-    color: colors.white,
   },
   list: {
     padding: 16,
@@ -250,20 +216,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
     borderWidth: 2,
     borderColor: colors.white,
-  },
-  newBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  newBadgeText: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: "600",
   },
   matchInfo: {
     padding: 16,
@@ -314,6 +266,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     fontWeight: "600",
+  },
+  actionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  actionButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.gray[100],
+  },
+  passButton: {
+    backgroundColor: colors.gray[100],
+  },
+  likeButton: {
+    backgroundColor: colors.gray[100],
+  },
+  chatButton: {
+    backgroundColor: colors.gray[100],
   },
 });
 
