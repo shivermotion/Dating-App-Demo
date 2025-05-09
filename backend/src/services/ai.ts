@@ -1,72 +1,93 @@
-import axios from 'axios';
+import { WordTokenizer, TfIdf, PorterStemmer } from 'natural';
+import { ToxicityAnalyzer } from './toxicity';
+import { wordToVec } from './word2vec';
 
-const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://localhost:11434/api';
-
-interface EmbeddingResponse {
-  embedding: number[];
-}
-
-interface ChatResponse {
-  response: string;
-}
+// Using Ollama for local LLM
+const OLLAMA_API = 'http://localhost:11434/api';
 
 export class AIService {
-  // Generate embeddings for user traits
-  static async generateEmbeddings(text: string): Promise<number[]> {
+  private tokenizer: WordTokenizer;
+  private toxicityAnalyzer: ToxicityAnalyzer;
+
+  constructor() {
+    this.tokenizer = new WordTokenizer();
+    this.toxicityAnalyzer = new ToxicityAnalyzer();
+  }
+
+  async generateBioAndTraits(responses: string[]): Promise<{ bio: string; traits: { name: string; score: number }[] }> {
     try {
-      const response = await axios.post<EmbeddingResponse>(`${OLLAMA_API_URL}/embeddings`, {
-        model: 'llama2',
-        prompt: text
+      const prompt = `Based on these responses, create a dating profile bio and identify key personality traits:
+      ${responses.join('\n')}
+      
+      Format the response as JSON:
+      {
+        "bio": "engaging 2-3 sentence bio",
+        "traits": [{"name": "trait name", "score": 0.x}]
+      }`;
+
+      const response = await fetch(`${OLLAMA_API}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama2',
+          prompt,
+          format: 'json'
+        })
       });
-      return response.data.embedding;
+
+      const data = await response.json();
+      return JSON.parse(data.response);
     } catch (error) {
-      console.error('Error generating embeddings:', error);
-      throw new Error('Failed to generate embeddings');
+      console.error('Error generating bio and traits:', error);
+      return {
+        bio: "I'm excited to meet new people and see where things go!",
+        traits: [
+          { name: "friendly", score: 0.8 },
+          { name: "outgoing", score: 0.7 }
+        ]
+      };
     }
   }
 
-  // Generate chat suggestions
-  static async generateChatSuggestion(context: string): Promise<string> {
+  async generateEmbedding(text: string): Promise<number[]> {
     try {
-      const response = await axios.post<ChatResponse>(`${OLLAMA_API_URL}/generate`, {
-        model: 'llama2',
-        prompt: `Given this dating context: "${context}", generate a friendly, engaging first message that shows interest and asks an open-ended question. Keep it casual and natural.`,
-        stream: false
-      });
-      return response.data.response;
+      // Use word2vec for generating embeddings
+      return await wordToVec.textToVector(text);
     } catch (error) {
-      console.error('Error generating chat suggestion:', error);
-      throw new Error('Failed to generate chat suggestion');
+      console.error('Error generating embedding:', error);
+      return new Array(768).fill(0); // Return zero vector as fallback
     }
   }
 
-  // Analyze message sentiment
-  static async analyzeSentiment(text: string): Promise<number> {
+  async analyzeSentiment(text: string): Promise<number> {
     try {
-      const response = await axios.post<ChatResponse>(`${OLLAMA_API_URL}/generate`, {
-        model: 'llama2',
-        prompt: `Analyze the sentiment of this message on a scale from -1 (very negative) to 1 (very positive): "${text}". Respond with only a number.`,
-        stream: false
+      const words = this.tokenizer.tokenize(text) || [];
+      const stemmedWords = words.map(word => PorterStemmer.stem(word.toLowerCase()));
+      
+      // Simple sentiment analysis using word polarity
+      let score = 0;
+      const positiveWords = ['love', 'happy', 'great', 'awesome', 'amazing', 'good', 'nice', 'fun'];
+      const negativeWords = ['hate', 'bad', 'awful', 'terrible', 'horrible', 'wrong', 'sad'];
+      
+      stemmedWords.forEach(word => {
+        if (positiveWords.includes(word)) score += 1;
+        if (negativeWords.includes(word)) score -= 1;
       });
-      return parseFloat(response.data.response);
+      
+      // Normalize to range [-1, 1]
+      return Math.max(-1, Math.min(1, score / Math.max(words.length, 1)));
     } catch (error) {
       console.error('Error analyzing sentiment:', error);
-      throw new Error('Failed to analyze sentiment');
+      return 0;
     }
   }
 
-  // Check message toxicity
-  static async checkToxicity(text: string): Promise<number> {
+  async analyzeToxicity(text: string): Promise<number> {
     try {
-      const response = await axios.post<ChatResponse>(`${OLLAMA_API_URL}/generate`, {
-        model: 'llama2',
-        prompt: `Rate the toxicity of this message on a scale from 0 (not toxic) to 1 (very toxic): "${text}". Respond with only a number.`,
-        stream: false
-      });
-      return parseFloat(response.data.response);
+      return await this.toxicityAnalyzer.analyze(text);
     } catch (error) {
-      console.error('Error checking toxicity:', error);
-      throw new Error('Failed to check toxicity');
+      console.error('Error analyzing toxicity:', error);
+      return 0;
     }
   }
 } 
